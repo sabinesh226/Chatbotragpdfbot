@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Orewa Bot | AI Advisor</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;800&display=swap"
+        rel="stylesheet">
+
+    <style>
+        :root {
+            /* Vibrant Gradient Palette */
+            --primary: #8b5cf6;
+            --secondary: #ec4899;
+            --accent: #06b6d4;
+            --bg-mesh: radial-gradient(at 0% 0%, #1e1b4b 0, transparent 50%),
+                radial-gradient(at 100% 0%, #312e81 0, transparent 50%),
+                radial-gradient(at 100% 100%, #581c87 0, transparent 50%),
+                radial-gradient(at 0% 100%, #831843 0, transparent 50%);
+            --glass-bg: rgba(15, 23, 42, 0.6);
+            --user-grad: linear-gradient(135deg, #8b5cf6 0%, #6366f1 100%);
+            --bot-grad: rgba(255, 255, 255, 0.08);
+        }
+
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background: #0f172a;
+            background-image: var(--bg-mesh);
+            height: 100vh;
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: #f8fafc;
+            overflow: hidden;
+        }
+
+        /* --- MATCHING SCROLLBAR --- */
+        #chat-box::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        #chat-box::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        #chat-box::-webkit-scrollbar-thumb {
+            background: linear-gradient(to bottom, var(--primary), var(--secondary));
+            border-radius: 20px;
+            border: 2px solid transparent;
+        }
+
+        #chat-box::-webkit-scrollbar-thumb:hover {
+            background: var(--secondary);
+        }
+
+        .chat-container {
+            width: 95%;
+            max-width: 480px;
+            height: 85vh;
+            background: var(--glass-bg);
+            backdrop-filter: blur(25px) saturate(180%);
+            -webkit-backdrop-filter: blur(25px) saturate(180%);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 32px;
+            /* Container corners */
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 50px 100px -20px rgba(0, 0, 0, 0.7);
+            overflow: hidden;
+            /* This clips the children to the container's radius */
+        }
+
+        header {
+            padding: 25px;
+            text-align: center;
+            background: rgba(255, 255, 255, 0.03);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        header h2 {
+            margin: 0;
+            font-weight: 800;
+            font-size: 1.4rem;
+            background: linear-gradient(to right, #818cf8, #f472b6);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        #chat-box {
+            flex: 1;
+            overflow-y: auto;
+            padding: 25px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .message {
+            max-width: 85%;
+            padding: 14px 20px;
+            border-radius: 22px;
+            font-size: 0.95rem;
+            line-height: 1.5;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            cursor: default;
+            position: relative;
+        }
+
+        .message:hover {
+            transform: scale(1.02);
+            filter: brightness(1.1);
+            box-shadow: 0 10px 20px -5px rgba(0, 0, 0, 0.3);
+        }
+
+        .user {
+            align-self: flex-end;
+            background: var(--user-grad);
+            color: white;
+            border-bottom-right-radius: 4px;
+            box-shadow: 0 8px 16px -4px rgba(99, 102, 241, 0.4);
+        }
+
+        .bot {
+            align-self: flex-start;
+            background: var(--bot-grad);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-bottom-left-radius: 4px;
+        }
+
+        .typing-container {
+            display: none;
+            padding: 15px 25px;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .dots {
+            display: flex;
+            gap: 4px;
+        }
+
+        .dot {
+            width: 8px;
+            height: 8px;
+            background: #ec4899;
+            border-radius: 50%;
+            animation: bounce 1.4s infinite ease-in-out both;
+        }
+
+        .dot:nth-child(1) {
+            animation-delay: -0.32s;
+        }
+
+        .dot:nth-child(2) {
+            animation-delay: -0.16s;
+        }
+
+        @keyframes bounce {
+
+            0%,
+            80%,
+            100% {
+                transform: scale(0);
+            }
+
+            40% {
+                transform: scale(1);
+            }
+        }
+
+        .input-area {
+            padding: 25px;
+            display: flex;
+            gap: 12px;
+            background: rgba(0, 0, 0, 0.2);
+            /* ROUNDING THE CORNERS BEHIND */
+            border-bottom-left-radius: 32px;
+            border-bottom-right-radius: 32px;
+        }
+
+        input {
+            flex: 1;
+            background: rgba(255, 255, 255, 0.07);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 14px 18px;
+            border-radius: 16px;
+            color: white;
+            font-family: inherit;
+            transition: 0.4s;
+        }
+
+        input:focus {
+            border-color: var(--secondary);
+            background: rgba(255, 255, 255, 0.12);
+            box-shadow: 0 0 0 4px rgba(236, 72, 153, 0.2);
+            outline: none;
+        }
+
+        button {
+            background: linear-gradient(135deg, #ec4899 0%, #8b5cf6 100%);
+            color: white;
+            border: none;
+            padding: 0 24px;
+            border-radius: 16px;
+            cursor: pointer;
+            font-weight: 700;
+            transition: 0.3s;
+            text-transform: uppercase;
+            font-size: 0.8rem;
+            letter-spacing: 1px;
+        }
+
+        button:hover {
+            box-shadow: 0 0 20px rgba(236, 72, 153, 0.5);
+            transform: translateY(-2px);
+        }
+
+        /* Styling for professional Markdown content */
+        .message.bot p {
+            margin: 0 0 10px 0;
+            /* Space between paragraphs */
+        }
+
+        .message.bot p:last-child {
+            margin-bottom: 0;
+        }
+
+        .message.bot b,
+        .message.bot strong {
+            color: #f472b6;
+            /* Highlighting keywords in pink/secondary color */
+            font-weight: 700;
+        }
+
+        .message.bot ul,
+        .message.bot ol {
+            margin: 10px 0;
+            padding-left: 20px;
+        }
+
+        .message.bot li {
+            margin-bottom: 5px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="chat-container">
+        <header>
+            <h2>OREWA BOT ✨</h2>
+            <div style="font-size: 0.7rem; color: #94a3b8; font-weight: 600;">ACADEMY ADVISOR AI</div>
+        </header>
+
+        <div id="chat-box">
+            <div class="message bot">
+                Hello! I am your Academy Advisor. Ask me anything about our courses we offer!
+            </div>
+        </div>
+
+        <!-- Thinking Dots -->
+        <div class="typing-container" id="typing-ui">
+            <div class="dots">
+                <div class="dot"></div>
+                <div class="dot"></div>
+                <div class="dot"></div>
+            </div>
+            <span style="font-size: 0.8rem; color: #ec4899; font-weight: 600;">Analysing...</span>
+        </div>
+
+        <form id="chat-form" class="input-area">
+            {% csrf_token %}
+            <input type="text" id="msg" placeholder="Ask about fees, courses..." autocomplete="off" required>
+            <button type="submit">SEND</button>
+        </form>
+    </div>
+
+    <script>
+        $('#chat-form').on('submit', function (e) {
+            e.preventDefault();
+            let msg = $('#msg').val();
+            if (!msg) return;
+
+            $('#chat-box').append(`<div class="message user">${msg}</div>`);
+            $('#msg').val('');
+
+            $('#typing-ui').css('display', 'flex');
+            $("#chat-box").scrollTop($("#chat-box")[0].scrollHeight);
+
+            $.post('/get-response/', {
+                message: msg,
+                csrfmiddlewaretoken: $('input[name=csrfmiddlewaretoken]').val()
+            }, function (data) {
+                $('#typing-ui').hide();
+
+                // Use marked.parse to convert Markdown (like **bold**) into HTML
+                const formattedReply = marked.parse(data.reply);
+
+                $('#chat-box').append(`<div class="message bot">${formattedReply}</div>`);
+                $("#chat-box").animate({ scrollTop: $("#chat-box")[0].scrollHeight }, 500);
+            });
+        });
+    </script>
+</body>
+
+</html>
